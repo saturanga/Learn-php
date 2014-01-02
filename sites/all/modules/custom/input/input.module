@@ -111,6 +111,11 @@ function input_more_form($form, &$form_submit) {
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="computer"]' => array('value' => 'yes'),
+      ),
+    ),
   );
   $form['computer_stats']['thickness'] = array(
     '#title' => t('Thickness'),
@@ -118,7 +123,7 @@ function input_more_form($form, &$form_submit) {
     '#field_prefix' => t('Approx.'),
     '#field_suffix' => t('inches'),
     '#maxlength' => 3,
-    '#size' => 10,
+    '#size' => 3,
   );
   $form['computer_stats']['heft'] = array(
     '#title' => t('Heft'),
