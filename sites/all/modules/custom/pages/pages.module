@@ -3,247 +3,188 @@
 
 /**
  * @file
- * Demonstrates use of the Form API.
+ * Example module to demonstrate using the menu system.
+ * 
+ * For more information about hook_menu(), see:
+ * http://api.drupal.org/api/drupal/modules--system--system.api.php/function/hook_menu/7
  *
- * For a full list of elements and attributes, see:
- * http://api.drupal.org/api/drupal/developer--topics--forms_api_reference.html/7
+ * In this file, we are demonstrating how hook_page_alter() works and how to implement it.
  */
 
 /**
  * Implements hook_menu().
  */
-function input_menu() {
-  $items['input/examples'] = array(
-    'title' => 'Form API examples',
-    'description' => 'Example of using the Form API.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('input_simple_form'),
+function pages_menu() {
+  $items['pages'] = array(
+    'title' => 'Menu system examples',
+    'description' => 'Menu system example that returns a string.',
+    'page callback' => 'pages_string',
     'access callback' => TRUE,
   );
-  $items['input/examples/simple'] = array(
-    'title' => 'Simple',
-    'description' => 'Simple example using a page callback.',
-    'page callback' => 'input_simple_page',
-    'access callback' => TRUE,
+  $items['pages/default'] = array(
+    'title' => 'String',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
   );
-  $items['input/examples/more'] = array(
-    'title' => 'More elements and attributes',
-    'description' => 'More complex example with additional form elements and attributes.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('input_more_form'),
-    'access callback' => TRUE,
-    'weight' => 1,
+  $items['pages/render-array'] = array(
+    'title' => 'Render array',
+    'description' => 'Menu system example using a render array.',
+    'page callback' => 'pages_render_array',
+    'access arguments' => array('access content'),
+    'weight' => 2,
+    'type' => MENU_LOCAL_TASK,
   );
-  $items['input/search-autocomplete'] = array(
-    'description' => 'A callback for our search autocomplete.',
-    'page callback' => 'input_search_autocomplete',
+  $items['pages/render-array/tab1'] = array(
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'title' => 'Tab 1',
+  );
+  $items['pages/render-array/tab2'] = array(
+    'title' => 'Tab 2',
+    'description' => 'Demonstrating secondary tabs.',
+    'page callback' => 'pages_render_array',
+    'access callback' => TRUE,
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['pages/callback'] = array(
+    'title' => 'Example of a callback type',
+    'page callback' => 'pages_render_array',
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
-  $items['input/search-history-delete'] = array(
-    'title' => 'Delete search history',
-    'page callback' => 'input_search_history_delete_page',
-    'access callback' => TRUE,
+  $items['pages/argument'] = array(
+    'title' => 'Argument',
+    'description' => 'Menu system example using an argument.',
+    'page callback' => 'pages_argument',
+    'access arguments' => array('access content'),
   );
-  
+  $items['pages/%/placeholder'] = array(
+    'title' => 'Placeholder',
+    'description' => 'Menu system example using a placeholder.',
+    'page callback' => 'pages_argument',
+    'page arguments' => array(1),
+    'access arguments' => array('access content'),
+  );
+  $items['pages/object/%pages_object'] = array(
+    'title' => 'Object',
+    'description' => 'Menu system example using a placeholder.',
+    'page callback' => 'pages_object',
+    'page arguments' => array(2),
+    'access arguments' => array('access content'),
+  );
+  $items['pages/title/%'] = array(
+    'description' => 'Example of a dynamic title.',
+    'page callback' => 'pages_render_array',
+    'access callback' => TRUE,
+    'title callback' => 'pages_title_callback',
+    'title arguments' => array(2),
+  );
+
   return $items;
 }
 
 
 /**
- * A simple form.
+ * Menu callback; page callback returning a simple string.
  */
-function input_simple_form($form, &$form_submit) {
-  $form['color'] = array(
-    '#title' => t('Favorite color'),
-    '#type' => 'textfield',
-    '#required' => TRUE,
-    '#description' => t('What is your favorite color? Blue? No, wait-'),
+function pages_string() {
+  $output = '
+    <p>Pages can be returned as strings.</p>
+    <p>Pages can be returned as <em>render arrays</em>.</p>';
+  $output .= theme('item_list', array(
+    'title' => 'Render arrays are better because...',
+    'items' => array(
+      'They allow content to be modified as an array.',
+      'Arrays are a lot easier to modify than HTML.',
+    ))
   );
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => 'Submit',
-  );
-  return $form;
+
+  return $output;
 }
 
 
 /**
- * Menu callback; page demonstrating embedding a form on a page.
+ * Menu callback; page callback returning a render array.
  */
-function input_simple_page() {
+function pages_render_array() {
   $build = array(
-    'header_text' => array(
+    'string_paragraph' => array(
       '#type' => 'markup',
-      '#markup' => '<p>' . t('To add additional content to a form page, you can use a page callback and return a render array like this.') . '</p>',
+      '#markup' => '<p>Pages can be returned as strings.</p>',
     ),
-    'example_form' => drupal_get_form('input_simple_form'),
+    'render_array_paragraph' => array(
+      '#type' => 'markup',
+      '#markup' => '<p>Pages can be returned as <em>render arrays</em>.</p>',
+    ),
+    'why_render_arrays' => array(
+      '#items' => array('They allow content to be modified as an array.', 'Arrays are a lot easier to modify than HTML.'),
+      '#title' => 'Render arrays are better because...',
+      '#theme' => 'item_list',
+    ),
   );
+
   return $build;
 }
 
 
 /**
- * Validation for input_simple_form().
+ * A page callback returning an argument.
  */
-function input_simple_form_validate($form, &$form_state) {
-  
-  // Check for the color 'blue'.
-  if ($form_state['values']['color'] == 'blue') {
-    form_set_error('color', 'Sorry, your favorite color is actually yellow.');
-  }
-}
-
-
-/**
- * Submit function for input_simple_form().
- */
-function input_simple_form_submit($form, &$form_state) {
-  
-  // Display a message upon successful submission.
-  drupal_set_message(t("I like @color, too!", array('@color' => $form_state['values']['color'])));
-}
-
-
-/**
- * A longer form with more elements and attributes.
- */
-function input_more_form($form, &$form_submit) {
-  
-  $form['computer'] = array(
-    '#title' => t('Do you own a computer?'),
-    '#type' => 'radios',
-    '#options' => array('yes' => t('Yes'), 'no' => t('No')),
-    '#required' => TRUE,
-  );
-  
-  // Demonstrating a fieldset.
-  $form['computer_stats'] = array(
-    '#title' => 'Computer stats',
-    '#type' => 'fieldset',
-    '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
-    '#states' => array(
-      'visible' => array(
-        ':input[name="computer"]' => array('value' => 'yes'),
-      ),
-    ),
-  );
-  $form['computer_stats']['thickness'] = array(
-    '#title' => t('Thickness'),
-    '#type' => 'textfield',
-    '#field_prefix' => t('Approx.'),
-    '#field_suffix' => t('inches'),
-    '#maxlength' => 3,
-    '#size' => 3,
-  );
-  $form['computer_stats']['heft'] = array(
-    '#title' => t('Heft'),
-    '#type' => 'select',
-    '#options' => array(
-      'small' => t('I could throw this thing a long way.'),
-      'medium' => t('I would rather drop it than throw it.'),
-      'heavy' => t('I need help to move it.'),
-    ),
-  );
-  
-  $form['help'] = array(
+function pages_argument($arg1) {
+  $build['argument_paragraph'] = array(
     '#type' => 'markup',
-    '#markup' => '<p>' . t('For more information about elements and attributes, see the <a href="!url">Form API reference page</a>', array('!url' => url('http://api.drupal.org/api/drupal/developer--topics--forms_api_reference.html/7'))) . '.</p>',
+    '#markup' => '<p>' . t('The argument passed was @arg1.', array('@arg1' => $arg1)) . '</p>',
   );
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Submit'),
+
+  return $build;
+}
+
+
+/**
+ * Example of passing an argument to be loaded as an object.
+ */
+function pages_object_load($id) {
+  return array(
+    'id' => $id,
+    'times_two' => $id * 2,
+    'additional_info' => 'Some additonal information about this object loaded from the database',
   );
-  
-  return $form;
 }
 
 
 /**
- * Implements hook_form_alter().
+ * Return a default for the pages_object_load() function.
+ */
+function pages_object_to_arg($arg) {
+  return empty($id) ? 42 : $id;
+}
+
+
+/**
+ * Example of using a argument_load() function to load additional information into
+ * argument before passing to page callback.
+ */
+function pages_object($object) {
+  return array(
+    '#type' => 'markup',
+    '#markup' => t('The id is @id and that times 2 is @times_two.', array('@id' => $object['id'], '@times_two' => $object['times_two'])),
+  );
+}
+
+
+/**
+ * Example of a page title callback function.
+ */
+function pages_title_callback($arg) {
+  return 'There is an argument in this title: ' . $arg;
+}
+
+
+/**
+ * Implements hook_page_alter().
  *
- * To find the $form_id, you can ether add an echo $form_id; to print
- * a list of ids to the browser, or use Firebug to inspect the element and
- * conver the 'id' of the form to use underscores.
+ * Demonstrating specifically why it's good to return a render array instead
+ * of a string.
  */
-function input_form_alter(&$form, &$form_state, $form_id) {
-  switch ($form_id) {
-    case 'search_block_form':
-      $form['#submit'][] = 'input_search_submit';
-      
-      // A couple built-in autocomplete paths you can use:
-      // user/autocomplete - Autocompletes usernames
-      // taxonomy/autocomplete - Autocompletes taxonomy terms as a comma-separated list
-      $form['search_block_form']['#autocomplete_path'] = 'input/search-autocomplete';
-      $form['clear'] = array(
-        '#type' => 'markup',
-        '#markup' => '<div style="float:left">' . l(t('Clear history'), 'input/search-history-delete', array('query' => array('destination' => 'input/examples'))) . '</div>',
-      );
-      break;
-  }
-  return;
-}
-
-
-/**
- * Submission function for search form.
- *
- * We are storing a search history which we can use for a later example of autocompletion.
- */
-function input_search_submit($form, &$form_state) {
-  $phrase = $form_state['values']['search_block_form'];
-  $search_history = variable_get('input_search_history', array());
-  $search_history[] = $phrase;
-  variable_set('input_search_history', $search_history);
-  drupal_set_message(t('Your search phrase %phrase has been saved to history.', array('%phrase' => $phrase)));
-}
-
-
-/**
- * Menu callback; Retrieve a JSON object containing autocomplete suggestions for search.
- *
- * This loops through the 'input_search_history' variable and finds matches to currently
- * typed search phrase. Then, drupal_json_output is called to format the result as json,
- * which the autocomplete script expects.
- */
-function input_search_autocomplete($string = '') {
-  $matches = array();
-  $search_history = variable_get('input_search_history', array());
-  foreach ($search_history as $phrase) {
-    if (stristr($phrase, $string)) {
-      $matches[$phrase] = $phrase;
-    }
-  }
-  drupal_json_output($matches);
-}
-
-
-/**
- * Menu callback; get confirm form for deleting search history.
- */
-function input_search_history_delete_page() {
-  return drupal_get_form('input_search_history_delete_confirm');
-}
-
-
-/**
- * Build a confirm form for deletion of search history.
- */
-function input_search_history_delete_confirm($form, &$form_state) {
-  $caption = '<p>' . t('This action cannot be undone.') . '</p>';
-  $heading = t('Are you sure you want to clear the search history?');
-  $cancel_path = 'input/examples';
-  $yes = t('Delete history');
-  $no = t('Cancel');
-  return confirm_form($form, $heading, $cancel_path, $caption, $yes, $no);
-}
-
-
-/**
- * Submit function for the confirm deletion form.
- */
-function input_search_history_delete_confirm_submit($form, &$form_state) {
-  variable_del('input_search_history');
-  drupal_set_message('The search history has been cleared.');
+function pages_page_alter(&$page) {
+  $page['content']['system_main']['why_render_arrays']['#weight'] = -10;
 }
